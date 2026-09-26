@@ -17,6 +17,7 @@ slai-rfcs/
 │   ├── 0002-agent.md              # cmugpt-agent
 │   ├── 0003-surface.md            # cmugpt-surface
 │   └── 0004-mcp-server.md         # mcp-server
+├── openbark/                      # OpenBark (no RFCs yet)
 ├── slc/                           # SLC (no RFCs yet)
 └── slrp/                          # SLRP (no RFCs yet)
 ```
@@ -39,6 +40,10 @@ Bark spans three repositories. RFC 0001 describes how they fit together, and eac
 | 0002 | [Agent](./bark/0002-agent.md) | cmugpt-agent | Draft |
 | 0003 | [Surface](./bark/0003-surface.md) | cmugpt-surface | Draft |
 | 0004 | [MCP Server](./bark/0004-mcp-server.md) | mcp-server, cmugpt-agent, cmugpt-surface | Draft |
+
+### OpenBark
+
+No RFCs yet.
 
 ### SLC
 
