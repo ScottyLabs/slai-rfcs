@@ -94,13 +94,6 @@ All three deploy through Kennel from their own repository. Kennel builds the Nix
 
 The Surface never reads the Agent's database. Memory management in the UI goes through the Agent's `/memory` routes.
 
-### Rules for changing a contract
-
-1. **Additive first.** Add new optional fields, routes, event types, and tool groups before anything depends on them. Rename or remove only after every consumer has stopped using the old form.
-2. **Deploy the callee first.** The Agent's request models reject unknown fields (`extra="forbid"`), so a new request field must be live in the Agent before the Surface sends it. A new stream event type can ship in the Agent first, because the Surface's parser (`agentStreamParsing.ts`) drops event types it doesn't recognize. A new MCP tool group must be deployed before the Agent relies on it.
-3. **Keep shared identifiers in one place per repository.** Tool group ids, model ids, and event names each live in a single constant in each repository, so a change is a search for one symbol.
-4. **Write an RFC for any change to these contracts.**
-
 ### Development environment
 
 All three repositories use devenv with Kennel's shared module (`inputs.scottylabs.devenvModules.default`, `scottylabs.enable = true`). The module provides `bao` and `secretspec`, sets `BAO_ADDR`, and exports resolved secrets into the shell. Repositories that need Postgres enable `scottylabs.postgres` with `pgvector`.
