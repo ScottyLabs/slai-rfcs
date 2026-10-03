@@ -159,13 +159,15 @@ A module author should not need to change the Agent. If adding a source or an ac
 
 ### Trust boundaries and identity
 
-Four of these reverse a decision the Bark RFCs argue for. Each reversal is stated here and argued where it is implemented.
+Three of these reverse a decision the Bark RFCs argue for. Each is stated here and argued in the RFC that implements it, so this section stays a summary rather than a second place the reasoning lives.
+
+Two further reversals are local to one service rather than to the architecture, and are stated where they belong: chat visibility is scoped and never reaches the public internet (RFC 0003), and write tool arguments are audited rather than never logged (RFC 0006).
 
 - **The browser never talks to the Agent or the tool servers.** Only the Surface holds the Agent's URL and credential. Unchanged from Bark.
 - **OpenBark's own tool servers are authenticated**, requiring a service credential and verifying the assertion themselves. Bark RFCs 0001 and 0004 keep the MCP server public on the premise that it serves only public data, which does not hold here. Bark's server stays public and OpenBark consumes it as one. Argued in RFC 0004.
 - **Identity is not pseudonymous past the Surface.** Instead of Bark's `oidc:<sha256(...)>`, the Surface sends a short-lived signed assertion carrying subject and roles, still withholding email and display name. Role-filtered retrieval, action authorization, and attributable approvals each require it. Argued in RFC 0003.
 - **Model routing is restricted** to an allowlist of providers configured for zero retention, or self-hosted. Bark routes freely through OpenRouter because its prompts carry public data. Argued in RFC 0002.
-- **Retrieved content is untrusted.** A document, pull request body, or meeting note can contain text addressed to the model. It is wrapped as data, as Bark wraps tool output, and may never originate an action. Argued in RFCs 0002 and 0006.
+- **Retrieved content is untrusted.** A document, pull request body, or meeting note can contain text addressed to the model. Wrapping it as data is Bark's existing behavior; the rule that retrieved text may never originate an action is new, because Bark has no write tools. Argued in RFCs 0002 and 0006.
 
 ### Data ownership
 
