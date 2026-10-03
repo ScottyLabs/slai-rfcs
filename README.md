@@ -19,7 +19,13 @@ slai-rfcs/
 │   └── 0004-mcp-server.md         # mcp-server
 ├── integration/                   # Integration (no RFCs yet)
 ├── internal/                      # Internal (no RFCs yet)
-├── openbark/                      # OpenBark (no RFCs yet)
+├── openbark/                      # OpenBark, the internal assistant and platform
+│   ├── 0001-system-architecture.md
+│   ├── 0002-agent.md
+│   ├── 0003-surface.md
+│   ├── 0004-mcp-tools.md
+│   ├── 0005-knowledge-and-retrieval.md
+│   └── 0006-actions-and-approvals.md
 ├── slc/                           # SLC (no RFCs yet)
 └── slrp/                          # SLRP (no RFCs yet)
 ```
@@ -53,7 +59,27 @@ No RFCs yet.
 
 ### OpenBark
 
-No RFCs yet.
+OpenBark is an internal assistant for ScottyLabs members and a shared platform the team builds modules on top of. It reuses Bark's shape and inverts its trust posture: members are authorized rather than only authenticated, the material it answers from is private and cited, and it takes approved actions on a member's behalf. RFC 0001 describes the architecture and lists the extension points.
+
+OpenBark spans four repositories, and also consumes Bark's `mcp-server` as a tool server rather than re-wrapping campus data.
+
+| Repository | Role |
+|---|---|
+| [openbark-surface](https://git.cmu.dev/ScottyLabs/openbark-surface) | Web app and BFF: sign-in, authorization, chats, approvals, audit |
+| [openbark-agent](https://git.cmu.dev/ScottyLabs/openbark-agent) | Planning, retrieval, model execution, verification, memory, run state |
+| [openbark-knowledge](https://git.cmu.dev/ScottyLabs/openbark-knowledge) | Source ingestion, retrieval, and the read MCP tools over them |
+| [openbark-actions](https://git.cmu.dev/ScottyLabs/openbark-actions) | Approval-gated write MCP tools and their providers |
+
+| Number | Title | Affects | Status |
+|--------|-------|---------|--------|
+| 0001 | [System Architecture](./openbark/0001-system-architecture.md) | all | Draft |
+| 0002 | [Agent](./openbark/0002-agent.md) | openbark-agent | Draft |
+| 0003 | [Surface](./openbark/0003-surface.md) | openbark-surface | Draft |
+| 0004 | [MCP Tools](./openbark/0004-mcp-tools.md) | openbark-knowledge, openbark-actions, openbark-agent, openbark-surface | Draft |
+| 0005 | [Knowledge and Retrieval](./openbark/0005-knowledge-and-retrieval.md) | openbark-knowledge, openbark-agent | Draft |
+| 0006 | [Actions, Approvals, and Audit](./openbark/0006-actions-and-approvals.md) | openbark-actions, openbark-agent, openbark-surface | Draft |
+
+Where OpenBark reverses a decision the Bark RFCs argue for, the reversal is recorded in that RFC's Alternatives Considered section. The [OpenBark README](./openbark/README.md) lists them.
 
 ### SLC
 
