@@ -100,6 +100,7 @@ A new class is added only when an effect does not fit an existing one, because a
 ```mermaid
 sequenceDiagram
     participant M as Member
+    participant R as Approver
     participant S as Surface
     participant A as Agent
     participant W as openbark-actions
@@ -108,20 +109,28 @@ sequenceDiagram
     M->>S: message
     S->>A: stream request + assertion
     A->>W: preview(args)
+    W->>W: verify bearer and assertion
     W->>P: preview(args, actor)
-    P-->>A: Preview
+    P-->>W: Preview
+    W-->>A: Preview
     A->>S: action_preview, then action_pending(run_id)
     Note over A: run persisted, nothing changed
-    S->>M: preview shown; queued for approvers
-    M->>S: approve (an approver with the permission)
+    S-->>M: preview shown inline
+    S-->>R: queued at /approvals
+
+    Note over S,R: minutes to days, or expiry
+
+    R->>S: approve
     S->>S: record approver, write audit
     S->>A: resume(run_id, approval_ref)
-    A->>A: re-check args against preview
+    A->>A: re-check args against the approved preview
     A->>W: execute(args, idempotency_key, approval_ref)
-    W->>P: execute(...)
-    P-->>A: Result
-    A->>S: action_result, audit record
-    A->>S: answer continues
+    W->>W: resolve approval_ref, re-check permission and limits
+    W->>P: execute(args, actor, idempotency_key)
+    P-->>W: Result
+    W-->>A: Result
+    A->>S: action_result, audit record, answer continues
+    S-->>M: relayed to the browser
 ```
 
 Invariants:
