@@ -109,7 +109,7 @@ Bark's guards validate map selection against a building catalog, repair false cl
 - **Citations resolve.** Every citation id in the answer must be one the index returned this turn. A fabricated RFC number, file path, or commit fails the check.
 - **Internal claims are cited.** A sentence that asserts something about institutional material without a citation is flagged. The answer is regenerated once, then degraded to a statement that the assistant could not ground the claim.
 - **Action claims match reality.** An answer may not say an action was taken unless an execution was recorded this run. This is the equivalent of Bark's false-lookup-failure repair, pointed at the more dangerous direction.
-- **Action arguments trace to the member's request.** An action whose arguments appear only in retrieved content and not in the conversation is blocked and surfaced as a potential injection. This is the containment for untrusted retrieved material.
+- **The decision to act originates with a person.** Only a member's own message may supply the intent to take an action. Retrieved content may supply facts that fill in an action's arguments, such as a date, a recipient group, or a room, but it may never be the reason an action is proposed. An action of a class that no member utterance in the conversation requested is blocked and surfaced as a potential injection. This is the containment for untrusted retrieved material, and the check is on where the intent came from, not on whether the argument text appears in the conversation.
 - **No leaks.** Secrets, system prompt text, and assertion contents are stripped, as in Bark.
 
 All of these are deterministic. Bark's reasoning against a second model call for verification holds and is stronger here, because a verifier is itself vulnerable to the injection it is checking for.
@@ -125,7 +125,10 @@ The one change is a boundary. Personal memory holds facts about the member. Inst
 - Each member has a daily token budget, tracked as in Bark. Requests over it receive HTTP 429.
 - Prompts carry private material, so model providers must be allowlisted. `ALLOWED_MODEL_IDS` is the set the Agent will route to, every entry must be served by a provider configured for zero retention or self-hosted, and the Agent rejects an id outside the set rather than trusting the Surface's validation of its own curated subset. This reverses bark RFC 0002's argument that OpenRouter lets the model list change without Agent changes, a convenience that was priced against public campus data.
 - Output passes the guards above. Input moderation is optional for an internal audience and off by default.
-- With `AGENT_ENV=production`, startup fails without `DATABASE_URL`, an assertion verification key, and both OpenBark tool servers configured and reachable. A foreign server being unreachable is not a startup failure, because it is a soft dependency (RFC 0001).
+- With `AGENT_ENV=production`, startup fails when the following is true
+    - No `DATABASE_URL`, 
+    - Missing an assertion verification key, and 
+    - One or both of OpenBark tool servers are not configured and reachable. 
 - Assertion contents, read tool arguments, and message text are not logged. Write tool arguments go to the audit log through the Surface (RFC 0006).
 
 ### HTTP API
@@ -167,7 +170,7 @@ Stream events: `status`, `delta`, `citation` (a source the answer relies on), `a
 
 - **Unit tests** run offline with a stubbed model, a stubbed index, and the in-memory store. CI runs them on every push. A test asserts that every tool in a recorded tool list belongs to a known group and carries a classification.
 - **Answer evaluations** measure citation accuracy and groundedness, as the answer-side half of the suite RFC 0005 defines and gates in CI.
-- **Adversarial evaluations** are required before any write tool ships. A corpus seeded with documents containing instructions to the model must not produce an action, and must not produce an action preview whose arguments came from those documents.
+- **Adversarial evaluations** are required before any write tool ships. A corpus seeded with documents containing instructions to the model must produce neither an action nor an action preview when no member utterance requested one. A paired set covers the other direction, so that a member's genuine request is not blocked when a retrieved document supplies part of its detail.
 
 ### Development environment
 
@@ -187,6 +190,7 @@ Stream events: `status`, `delta`, `citation` (a source the answer relies on), `a
 - How should the planner decide to retrieve? Bark's hint patterns are hand-written per tool group and the same approach would work, but retrieval is nearly always useful and the cheaper default may be to retrieve unless the message is clearly conversational.
 - Should the regeneration pass for uncited claims be one attempt or configurable? One is proposed to bound latency.
 - Does the token budget need to be per-role rather than per-member, given that some members will use OpenBark far more heavily?
+- Where exactly does intent end and detail begin? "Email everyone about the deadline change" is clearly intent from the member with the date supplied by a document, and a document that alone asks for a broadcast is clearly not. Between them sit cases like a member saying "do what the meeting notes say we agreed," which delegates intent to a document on purpose. Proposed: treat an explicit delegation as intent for the class the member named and no other, so it cannot widen into an unrelated action, and require the preview to show which document the detail came from. The rule needs to be written precisely enough to implement before the first write provider ships.
 
 ## Implementation Phases
 
