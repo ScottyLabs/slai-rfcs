@@ -1,7 +1,7 @@
 # RFC 0002: Models
 
 - **Status:** Draft
-- **Author(s):** @jiya2301
+- **Author(s):** @jiyas
 - **Created:** 2026-10-23
 - **Updated:** 2026-10-23
 - **Affects:** `cmugpt-agent`, and future AI Team apps that call the platform
