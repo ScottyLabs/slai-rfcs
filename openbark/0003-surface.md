@@ -1,10 +1,15 @@
 # RFC 0003: Surface
 
 - **Status:** Draft
-- **Author(s):** @qianxuege
+- **Author(s):** @qianxuege, @vishnup
 - **Created:** 2026-10-03
-- **Updated:** 2026-10-03
+- **Updated:** 2026-10-24
 - **Affects:** openbark-surface
+
+
+## Note 
+
+OpenBark is built on top of the Bark's application, which means it follows the same pattern and web infastructure, with the only core difference being authorization (once a user logs in with their AndrewID, we identify whether they are a student or admin). A normal student is continued to the regular Bark application, whereas an admin is able to access OpenBark.  
 
 ## Overview
 
