@@ -1,9 +1,9 @@
-# RFC 0001: Title
+# RFC 0004: Gateway and Load Balancer DRAFT
 - **Status:** Draft
-- **Author(s):** 
-- **Created:** 
-- **Updated:** 
-- **Affects:** the repositories this RFC changes, for example `cmugpt-agent`
+- **Author(s):** Mofan Yu, Benson Chou, Ivan Chen, Aaron Zgy
+- **Created:** 2026-10-24
+- **Updated:** 2026-10-24
+- **Affects:** the API client part of other apps?
 ## Overview
 A 2-3 sentence summary of the proposal.
 ## Motivation
