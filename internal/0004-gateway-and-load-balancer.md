@@ -1,7 +1,7 @@
 # RFC 0004: Gateway and Load Balancer DRAFT
 
 - **Status:** Super Duper Draft
-- **Author(s):** Mofan Yu, Benson Chou, Ivan Chen, Aaron Zgy
+- **Author(s):** Mofan Yu, Benson Chou, Ivan Chen, Aaron Zhu
 - **Created:** 2026-10-24
 - **Updated:** 2026-10-24
 - **Affects:** the API client part of other apps?
