@@ -3,7 +3,7 @@
 - **Status:** Draft
 - **Author(s):** Mofan Yu, Benson Chou
 - **Created:** 2026-10-24
-- **Updated:** 2026-10-30
+- **Updated:** 2026-10-31
 - **Affects:** Clients of apps such as `cmu-gpt` and `cmu-agent`
 
 ## Overview
@@ -18,9 +18,9 @@ This RFC proposes a single LiteLLM gateway for apps using the self-hosted `sl-ch
 
 ## Goals
 
-- Define app responsibilities.
+- Define app responsibilities for calling the gateway.
 - Suggest routing strategies.
-- State how to handle failiure scenarios.
+- State how to handle failure scenarios.
 - Specify collection and storage of secrets and metrics.
 
 ## Non-Goals
@@ -43,7 +43,7 @@ Enable LiteLLM's Prometheus callback so Prometheus can scrape gateway `/metrics`
 
 - **App virtual key:** Keep the app's LiteLLM key on its backend and use it when calling the gateway. Choose `sl-chat` or `sl-code` in each request according to the app's task.
 - **HTTP 429s and failures:** Distinguish a rate limit from a temporarily full pool and use bounded retries when appropriate. Show a service-unavailable message when the gateway or model pool is down.
-- **Student identity and conversation history:** Authenticate the student and send a stable student ID with each request. Store conversation history in the app and include the context needed for each model call.
+- **Student identity and conversation history:** Authenticate the student and send a stable student ID with each request. Store conversation history in the app and include the context needed for each model call. Generate a separate conversation ID for each conversation and send it as `x-litellm-session-id` on every turn; LiteLLM scopes affinity by the app's virtual key.
 - **Rate limiting**: Enforce per-student limits. In the future, apps may be responsible for managing a per-app request cap.
 
 **Sample request**
@@ -51,6 +51,7 @@ Enable LiteLLM's Prometheus callback so Prometheus can scrape gateway `/metrics`
 POST /v1/chat/completions
 Authorization: Bearer <this-apps-virtual-key>
 x-litellm-end-user-id: student-id
+x-litellm-session-id: conversation-id
 Content-Type: application/json
 
 {"model":"sl-chat","messages":[{"role":"user","content":"Hi"}]}
@@ -60,7 +61,7 @@ Content-Type: application/json
 
 The gateway will distribute requests across two `sl-chat` endpoints and three `sl-code` endpoints (RFC 0003). The dev slice is exclusive to development testing.
 
-- For both pools, start with LiteLLM’s built-in `least-busy` strategy, which uses its observed in-flight requests. However, requests from the same conversation may reach different endpoints, wasting a worker’s cached prompt.
+- For both pools, start with LiteLLM’s built-in `least-busy` strategy, which uses its observed in-flight requests. Set `router_settings.optional_pre_call_checks` to `["session_affinity"]` so later turns in a conversation return to the endpoint chosen for its first turn, improving the chance of reusing a worker’s cached prompt. 
 - Limit each `sl-code` endpoint to 4 parallel requests and each production `sl-chat` endpoint to 16 (RFC 0003).
 - Benchmark other [LiteLLM routing strategies](https://docs.litellm.ai/docs/routing) and revisit this choice if the results justify it.
 - For retryable endpoint errors, try another available endpoint in the same pool.
@@ -75,8 +76,15 @@ Apps may experience unavailable pools from outages, restarts, and errors. LiteLL
 | The `llm-vgpu` VM is down | Both production `sl-chat` endpoints are unavailable. | Report `sl-chat` as unavailable to the app. |
 | The `llm-gpu` VM is down | All three `sl-code` endpoints are unavailable. | Report `sl-code` as unavailable to the app. |
 | The gateway VM is down | No app can reach LiteLLM. | The app handles a connection error or an upstream proxy error; LiteLLM cannot return a response. |
+| PostgreSQL is down | Key verification and usage recording may be disrupted even while the model workers are healthy. | Treat affected requests as a gateway availability problem, as described below. |
 
 An unavailable service is different from a rate-limiting error.
+
+### Database failures
+
+LiteLLM uses PostgreSQL for virtual keys, permissions, and usage records. During an outage, keys already cached by LiteLLM may continue to authenticate briefly, but uncached key lookups, key management, and usage writes can fail or be delayed. The apps should handle affected requests as a service interruption rather than as a student rate limit. [LiteLLM production guidance](https://docs.litellm.ai/docs/proxy/prod)
+
+LiteLLM also offers `allow_requests_on_db_unavailable`, which permits restricted request handling when the database cannot be reached. Its documentation says to use this only when LiteLLM runs inside a private VPC and is inaccessible from the public internet. Whether to enable it depends on the gateway's final network exposure and on whether we can tolerate gaps in key verification and usage records. Monitor database connectivity and verify authentication and usage recording after recovery. [LiteLLM database outage behavior](https://docs.litellm.ai/docs/proxy/prod)
 
 ### Data collecting and storage
 
@@ -96,10 +104,12 @@ If sustained light-app demand, such as Bark release, overwhelms the 2080 slices,
 ## Alternatives Considered
 
 - **Other gateway software:** Portkey Gateway offers retries and fallbacks but weaker key and budget management. A custom gateway would provide full control but require us to build keys, limits, and streaming. nginx or Caddy with static keys would be simpler but would not provide per-student usage tracking or fallback.
-- **Cross-pool fallback:** This helps preserves availability but may send requests to an unsuitable model or use more pool capacity than expected.
-- **Extra VM for gateway:** A separate GPU VM for our gateway could relieve a worker but requires more management and does not prevent a gateway failiure from affecting every app.
+- **Cross-pool fallback:** This helps preserve availability but may send requests to an unsuitable model or use more pool capacity than expected.
+- **Extra VM for gateway:** A separate GPU VM for our gateway could relieve a worker but requires more management and does not prevent a gateway failure from affecting every app.
 
 ## Open Questions
 
 - Should the keys, IDs and permissions be stored on a self-contained gateway machine or ScottyLabs’ shared Postgres?
+- During a PostgreSQL outage, should LiteLLM reject requests or use its restricted degraded mode? Can student-controlled clients reach the gateway directly?
+- Who owns PostgreSQL backups, restoration, and alerts, and how will we detect missing usage records after an outage?
 - Which components should be reworked after the initial layout and how do we minimize this process?
